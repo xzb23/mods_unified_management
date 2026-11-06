@@ -12,5 +12,4 @@ build
 /work_l
 
 *.c
-*.bat
 *.json
