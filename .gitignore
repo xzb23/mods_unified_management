@@ -8,6 +8,8 @@ build
 /mods
 /.vscode
 /mum_list
+/count
+/work_l
 
 *.c
 *.bat
