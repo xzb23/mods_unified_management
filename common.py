@@ -43,7 +43,7 @@ def get_config(config_name):
         exe_dir = os.path.dirname(os.path.abspath(sys.executable))
     else:
         exe_dir = os.path.dirname(os.path.abspath(__file__))
-    config_path = formatting_path(os.path.dirname(exe_dir))+"config.json"
+    config_path = formatting_path(exe_dir)+"config.json"
     if not os.path.exists(config_path):
         return ""
     elif not os.path.isfile(config_path):
