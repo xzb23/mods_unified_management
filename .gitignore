@@ -1,0 +1,13 @@
+__pycache__
+dist
+test
+build
+*.spec
+*.backup
+/.venv
+/mods
+/.vscode
+/mum_list
+
+*.c
+*.bat
