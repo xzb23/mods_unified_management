@@ -10,18 +10,18 @@ def r_mods():
     runing_config.g_mods_dir = common.get_config("g_mods_dir")
     while runing_config.g_mods_dir == "":
         print("g_mods_dir未设置, 请先设置g_mods_dir")
-        common.w_config("g_mods_dir", input("g_mods_dir: "))
+        common.w_config("g_mods_dir", common.formatting_path(input("g_mods_dir: ")))
         runing_config.g_mods_dir = common.get_config("g_mods_dir")
     runing_config.g_mods_dir = common.formatting_path(runing_config.g_mods_dir)
 
     hash_.traverse_dir(runing_config.MODS_DIR)
     hash_.hash_files_from_glist(hashlib.sha256)
 
-    archive_dir = common.formatting_path(runing_config.g_mods_dir+"archive/")
+    g_mods_archive_dir = common.formatting_path(runing_config.g_mods_dir+"archive/")
     mod_list = runing_config.VERSIONS_MODS_LIST_PATH + "modlist"
-    if not os.path.exists(archive_dir):
-        os.mkdir(archive_dir)
-    elif not os.path.isdir(archive_dir):
+    if not os.path.exists(g_mods_archive_dir):
+        os.mkdir(g_mods_archive_dir)
+    elif not os.path.isdir(g_mods_archive_dir):
         print("err!")
         time.sleep(3)
         exit(-2) # archive目录被占用
@@ -35,11 +35,54 @@ def r_mods():
 
     with open(mod_list, "a") as f:
         for mod in runing_tmp_data.file_hash_results:
-            f.write(mod.hash_value+" : "+os.path.basename(mod.filepath)+"\n")
-            os.rename(mod.filepath, archive_dir+mod.hash_value)
+            f.write(mod.hash_value+" : "+mod.filepath.split(runing_config.MODS_DIR)[1]+"\n")
+            if os.path.exists(g_mods_archive_dir+mod.hash_value):
+                continue
+            # os.rename(mod.filepath, g_mods_archive_dir+mod.hash_value)
+            with open(mod.filepath, "rb") as src, open(g_mods_archive_dir+mod.hash_value, "wb") as out:
+                data = src.read(1024**2)
+                while data:
+                    out.write(data)
+                    data = src.read(1024**2)
 
 def w_mods():
-    pass
+    runing_config.g_mods_dir = common.get_config("g_mods_dir")
+    g_mods_archive_dir = common.formatting_path(runing_config.g_mods_dir)+"archive/"
+    g_mods_temp_dir = common.formatting_path(runing_config.g_mods_dir)+"temp/"
+    mod_list_path = runing_config.VERSIONS_MODS_LIST_PATH + "modlist"
+
+    if not (os.path.exists(mod_list_path) and os.path.isfile(mod_list_path)):
+        print("未找到mod list")
+        time.sleep(3)
+        exit(0)
+    if not (os.path.exists(g_mods_archive_dir) and os.path.isdir(g_mods_archive_dir)):
+        print("err!")
+        time.sleep(3)
+        exit(-3) # g_mods_archive_dir损坏/不正确
+
+    if not os.path.exists(g_mods_temp_dir):
+        os.mkdir(g_mods_temp_dir)
+    elif not os.path.isdir(g_mods_temp_dir):
+        print("err!")
+        time.sleep(3)
+        exit(-2) # temp目录被占用
+
+    with open(mod_list_path, "r") as f:
+        mod_list = f.read().strip()
+        mod_list = mod_list.split("\n")
+        for mod in mod_list:
+            mod_hash = mod.split(":")[0].strip()
+            mod_name = mod.split(":")[1].strip()
+            # 可选流程，验证temp和archive内文件hash，待开发
+            if os.path.exists(g_mods_temp_dir+mod_hash) and os.path.isfile(g_mods_temp_dir+mod_hash):
+                os.rename(g_mods_temp_dir+mod_hash, runing_config.MODS_DIR+mod_name)
+            elif os.path.exists(g_mods_archive_dir+mod_hash) and os.path.isfile(g_mods_archive_dir+mod_hash):
+                with open(g_mods_archive_dir+mod_hash, "rb") as src, open(runing_config.MODS_DIR+mod_name, "wb") as out:
+                    data = src.read(1024**2)
+                    while data:
+                        out.write(data)
+                        data = src.read(1024**2)
+
 
 def menu():
     mod_list = runing_config.VERSIONS_MODS_LIST_PATH + "modlist"
@@ -55,6 +98,8 @@ if common.get_config("eula") != "true":
     if not common.eula():
         exit(0)
 
+exit_tips_flag = False
+        
 runing_config.WORK_DIR = common.formatting_path(os.getcwd())
 runing_config.MODS_DIR = common.formatting_path(runing_config.WORK_DIR + "mods/")
 
@@ -71,7 +116,55 @@ elif not os.path.isdir(runing_config.VERSIONS_MODS_LIST_PATH):
     time.sleep(3)
     exit(-2) # mum_list目录被占用
 
+if len(sys.argv) >= 2 and sys.argv[1] == "gameexit":
+    runing_config.g_mods_dir = common.get_config("g_mods_dir")
+    g_mods_archive_dir = common.formatting_path(runing_config.g_mods_dir)+"archive/"
+    g_mods_temp_dir = common.formatting_path(runing_config.g_mods_dir)+"temp/"
+    mod_list_path = runing_config.VERSIONS_MODS_LIST_PATH + "modlist"
+
+    if not (os.path.exists(mod_list_path) and os.path.isfile(mod_list_path)):
+        print("未找到mod list")
+        time.sleep(3)
+        exit(0)
+    if not (os.path.exists(g_mods_archive_dir) and os.path.isdir(g_mods_archive_dir)):
+        print("err!")
+        time.sleep(3)
+        exit(-3) # g_mods_archive_dir损坏/不正确
+
+    if not os.path.exists(g_mods_temp_dir):
+        os.mkdir(g_mods_temp_dir)
+    elif not os.path.isdir(g_mods_temp_dir):
+        print("err!")
+        time.sleep(3)
+        exit(-2) # temp目录被占用
+
+    with open(mod_list_path, "r") as f:
+        mod_list = f.read().strip()
+        mod_list = mod_list.split("\n")
+        for mod in mod_list:
+            mod_hash = mod.split(":")[0].strip()
+            mod_name = mod.split(":")[1].strip()
+            if not os.path.exists(g_mods_archive_dir+mod_hash):
+                os.rename(runing_config.MODS_DIR+mod_name, g_mods_archive_dir+mod_hash)
+            elif not os.path.isfile(g_mods_archive_dir+mod_hash):
+                print(f"E: {mod_name}在g_mods_archive_dir中被占用")
+                exit_tips_flag = True
+            elif not os.path.exists(g_mods_temp_dir+mod_hash):
+                os.rename(runing_config.MODS_DIR+mod_name, g_mods_temp_dir+mod_hash)
+            elif not os.path.isfile(g_mods_archive_dir+mod_hash):
+                print(f"W: {mod_name}在g_mods_temp_dir中被占用")
+    if exit_tips_flag:
+        input()
+    exit(0)
+    
 if len(os.listdir(runing_config.MODS_DIR)) == 0:
     w_mods()
 else:
-    menu()
+    flag_list = []
+    for path, dirs, files in os.walk(runing_config.MODS_DIR):
+        for filename in files:
+            flag_list.append(filename)
+    if len(flag_list) == 0:
+        w_mods()
+    else:
+        menu()
